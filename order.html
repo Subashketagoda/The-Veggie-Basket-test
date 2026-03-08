@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store | The Veggie Basket</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .store-container {
+            padding: 120px 5% 50px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .product-img {
+            height: 250px;
+            width: 100%;
+            object-fit: cover;
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-cat {
+            font-size: 0.8rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .product-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+        }
+
+        .product-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .product-price {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--text-dark);
+        }
+
+        .add-to-cart {
+            background: var(--primary);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .add-to-cart:hover {
+            background: var(--secondary);
+            transform: scale(1.1);
+        }
+
+        /* Cart Drawer */
+        .cart-drawer {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: white;
+            z-index: 2000;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+        }
+
+        .cart-drawer.open {
+            right: 0;
+        }
+
+        .cart-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1999;
+            display: none;
+        }
+
+        .cart-overlay.active {
+            display: block;
+        }
+
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .cart-items {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .cart-item {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .cart-item img {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            object-fit: cover;
+        }
+
+        .cart-total {
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 20px;
+            cursor: pointer;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        @media (max-width: 450px) {
+            .cart-drawer {
+                width: 100%;
+                right: -100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <div class="logo-container">
+            <a href="index.html" style="text-decoration: none; display: flex; align-items: center; gap: 12px;">
+                <img src="logo.png" alt="Logo">
+                <span>The Veggie Basket</span>
+            </a>
+        </div>
+        <div style="position: relative; cursor: pointer;" id="cart-toggle">
+            <i class="fas fa-shopping-basket" style="font-size: 1.5rem; color: var(--primary);"></i>
+            <span id="cart-count"
+                style="position: absolute; top: -10px; right: -10px; background: var(--secondary); color: white; font-size: 0.7rem; padding: 2px 6px; border-radius: 50%;">0</span>
+        </div>
+    </nav>
+
+    <div class="store-container">
+        <div class="section-head reveal active">
+            <h2>Fresh From The Farm</h2>
+            <p>Select your favorite items for your daily basket.</p>
+        </div>
+
+
+
+        <div class="product-grid" id="product-container">
+            <!-- Products will be loaded here -->
+            <p>Loading fresh harvest...</p>
+        </div>
+    </div>
+
+    <!-- Cart Drawer -->
+    <div class="cart-overlay" id="cart-overlay"></div>
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-header">
+            <h3>Your Basket</h3>
+            <i class="fas fa-times" id="close-cart" style="cursor: pointer;"></i>
+        </div>
+        <div class="cart-items" id="cart-items-container">
+            <!-- Cart items here -->
+        </div>
+        <div class="cart-total">
+            <div style="display: flex; justify-content: space-between;">
+                <span>Total:</span>
+                <strong id="cart-total-amount">Rs. 0.00</strong>
+            </div>
+            <a href="#" class="checkout-btn" id="place-order-btn">Place Order via WhatsApp</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getDatabase, ref, onValue, push, set, onDisconnect } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDp7G3C1mMeK1Htfsxharb05wtf0VTw88",
+            authDomain: "studio-7cdf1.firebaseapp.com",
+            databaseURL: "https://studio-7cdf1-default-rtdb.firebaseio.com",
+            projectId: "studio-7cdf1",
+            storageBucket: "studio-7cdf1.firebasestorage.app",
+            messagingSenderId: "460661592780",
+            appId: "1:460661592780:web:dc8fd00cad5541141e6869"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- Live Visitor Tracking ---
+        const visitorId = 'v_' + Math.random().toString(36).substr(2, 9);
+        const presenceRef = ref(db, 'veggie_visitors/' + visitorId);
+        set(presenceRef, { active: true, timestamp: Date.now() });
+        onDisconnect(presenceRef).remove();
+
+        let allProducts = [];
+        let cart = [];
+
+        // Load Products
+        onValue(ref(db, 'veggie_products'), (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                allProducts = Object.entries(data).map(([key, val]) => ({ id: key, ...val }));
+                renderProducts('all');
+            } else {
+                document.getElementById('product-container').innerHTML = '<p>No products found. Stay tuned for fresh stocks!</p>';
+            }
+        });
+
+        function renderProducts(filter) {
+            const container = document.getElementById('product-container');
+            container.innerHTML = '';
+
+            const filtered = filter === 'all' ? allProducts : allProducts.filter(p => p.category === filter);
+
+            filtered.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'product-card reveal active';
+                card.innerHTML = `
+                    <img src="${p.image || 'veg-cat.png'}" class="product-img" alt="${p.name}">
+                    <div class="product-info">
+                        <div class="product-cat">${p.category}</div>
+                        <div class="product-name">${p.name}</div>
+                        <div class="product-bottom">
+                            <div class="product-price">Rs. ${parseFloat(p.price).toLocaleString()}</div>
+                            <div class="add-to-cart" onclick="addToCart('${p.id}')">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        window.addToCart = (id) => {
+            const product = allProducts.find(p => p.id === id);
+            cart.push(product);
+            updateCartUI();
+            openCart();
+        };
+
+        function updateCartUI() {
+            document.getElementById('cart-count').innerText = cart.length;
+            const container = document.getElementById('cart-items-container');
+            container.innerHTML = '';
+
+            let total = 0;
+            cart.forEach((item, index) => {
+                total += parseFloat(item.price);
+                const div = document.createElement('div');
+                div.className = 'cart-item';
+                div.innerHTML = `
+                    <img src="${item.image || 'veg-cat.png'}">
+                    <div style="flex:1">
+                        <div style="font-weight:600">${item.name}</div>
+                        <div style="color:var(--text-muted); font-size:0.9rem">Rs. ${item.price}</div>
+                    </div>
+                    <i class="fas fa-trash" style="color:#ff4d4d; cursor:pointer;" onclick="removeFromCart(${index})"></i>
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('cart-total-amount').innerText = `Rs. ${total.toLocaleString()}`;
+        }
+
+        window.removeFromCart = (index) => {
+            cart.splice(index, 1);
+            updateCartUI();
+        };
+
+        const cartDrawer = document.getElementById('cart-drawer');
+        const overlay = document.getElementById('cart-overlay');
+
+        function openCart() {
+            cartDrawer.classList.add('open');
+            overlay.classList.add('active');
+        }
+
+        document.getElementById('cart-toggle').onclick = openCart;
+        document.getElementById('close-cart').onclick = () => {
+            cartDrawer.classList.remove('open');
+            overlay.classList.remove('active');
+        };
+        overlay.onclick = () => {
+            cartDrawer.classList.remove('open');
+            overlay.classList.remove('active');
+        };
+
+
+
+        // Place Order
+        document.getElementById('place-order-btn').onclick = async () => {
+            if (cart.length === 0) return alert('Your basket is empty!');
+
+            let text = `Hello The Veggie Basket! I'd like to place an order: \n\n`;
+            let total = 0;
+            const items = [];
+            cart.forEach(item => {
+                text += `- ${item.name} (Rs. ${item.price})\n`;
+                total += parseFloat(item.price);
+                items.push(item.name);
+            });
+            text += `\nTotal: Rs. ${total.toLocaleString()}\n\nPlease confirm my order.`;
+
+            // Log Order to Firebase for Admin Real-time Monitoring
+            await push(ref(db, 'veggie_orders'), {
+                customer: 'Web User',
+                items: items,
+                total: total,
+                timestamp: Date.now()
+            });
+
+            const encoded = encodeURIComponent(text);
+            window.open(`https://wa.me/94771234567?text=${encoded}`, '_blank');
+        };
+
+    </script>
+</body>
+
+</html>
