@@ -155,6 +155,7 @@
         }
 
         .checkout-btn {
+            display: block;
             width: 100%;
             background: var(--primary);
             color: white;
@@ -250,6 +251,12 @@
 
         let allProducts = [];
         let cart = [];
+        let siteSettings = { whatsapp: '94771234567', delivery_charge: 250 };
+
+        onValue(ref(db, 'veggie_settings'), (snapshot) => {
+            const data = snapshot.val();
+            if (data) siteSettings = data;
+        });
 
         // Load Products
         onValue(ref(db, 'veggie_products'), (snapshot) => {
@@ -367,7 +374,8 @@
             });
 
             const encoded = encodeURIComponent(text);
-            window.open(`https://wa.me/94771234567?text=${encoded}`, '_blank');
+            const cleanWA = siteSettings.whatsapp.replace(/\+/g, '').replace(/\s/g, '');
+            window.open(`https://wa.me/${cleanWA}?text=${encoded}`, '_blank');
         };
 
     </script>

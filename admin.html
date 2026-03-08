@@ -424,8 +424,17 @@
         <!-- LEADS TAB -->
         <div id="leads" class="admin-section">
             <div class="table-card">
-                <h3>Order Queries & Leads</h3>
-                <p style="color: #888; font-size: 0.8rem;">Live sync of WhatsApp inquiries logged via system.</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3>Order Queries & Leads</h3>
+                        <p style="color: #888; font-size: 0.8rem;">Live sync of WhatsApp inquiries logged via system.
+                        </p>
+                    </div>
+                    <button onclick="downloadOrderReport()" class="cta-button"
+                        style="padding: 10px 20px; font-size: 0.9rem; border: none; background: #2e7d32;">
+                        <i class="fas fa-file-export" style="margin-right: 8px;"></i> Download CSV Report
+                    </button>
+                </div>
                 <table>
                     <thead>
                         <tr>
@@ -520,12 +529,16 @@
         <div id="settings" class="admin-section">
             <div class="form-card" style="max-width: 600px;">
                 <h3>Global Site Settings</h3>
-                <div class="input-group"><label>WhatsApp Contact</label><input type="text" value="+94 77 123 4567">
+                <div class="input-group"><label>WhatsApp Contact</label><input type="text" id="s-wa"
+                        value="+94 77 123 4567">
                 </div>
-                <div class="input-group"><label>Office Address</label><input type="text" value="123 Farm Road, Colombo">
+                <div class="input-group"><label>Office Address</label><input type="text" id="s-addr"
+                        value="123 Farm Road, Colombo">
                 </div>
-                <div class="input-group"><label>Delivery Charge (Rs.)</label><input type="number" value="250"></div>
-                <button class="cta-button" style="width: 100%; border:none;">Update Global Settings</button>
+                <div class="input-group"><label>Delivery Charge (Rs.)</label><input type="number" id="s-delivery"
+                        value="250"></div>
+                <button class="cta-button" onclick="updateSettings()" style="width: 100%; border:none;">Update Global
+                    Settings</button>
             </div>
         </div>
 
@@ -693,11 +706,27 @@
                 orders.forEach(([key, val]) => {
                     const row = document.createElement('tr');
                     const date = new Date(val.timestamp).toLocaleString();
+                    const status = val.status || 'New';
+
+                    let badgeStyle = 'background: #e8f5e9; color: #2e7d32;';
+                    if (status === 'Processing') badgeStyle = 'background: #e3f2fd; color: #1976d2;';
+                    if (status === 'Packed') badgeStyle = 'background: #fff3e0; color: #f57c00;';
+                    if (status === 'Out for Delivery') badgeStyle = 'background: #f3e5f5; color: #7b1fa2;';
+                    if (status === 'Delivered') badgeStyle = 'background: #eeeeee; color: #616161;';
+
                     row.innerHTML = `
                         <td>${date}</td>
                         <td><strong>${val.customer || 'Guest'}</strong></td>
                         <td style="font-size: 0.85rem; max-width: 300px;">${val.items ? val.items.join(', ') : 'WhatsApp Inquiry'}</td>
-                        <td><span style="background:#e8f5e9; color:#2e7d32; padding:4px 10px; border-radius:20px; font-size:0.75rem;">New</span></td>
+                        <td>
+                            <select onchange="updateOrderStatus('${key}', this.value)" style="padding: 5px 10px; border-radius: 20px; border: none; font-size: 0.75rem; font-weight: 600; cursor: pointer; ${badgeStyle}">
+                                <option value="New" ${status === 'New' ? 'selected' : ''}>New</option>
+                                <option value="Processing" ${status === 'Processing' ? 'selected' : ''}>Processing</option>
+                                <option value="Packed" ${status === 'Packed' ? 'selected' : ''}>Packed</option>
+                                <option value="Out for Delivery" ${status === 'Out for Delivery' ? 'selected' : ''}>Out for Delivery</option>
+                                <option value="Delivered" ${status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+                            </select>
+                        </td>
                     `;
                     body.appendChild(row);
                 });
@@ -711,6 +740,65 @@
         onValue(ref(db, 'veggie_visitors'), (snapshot) => {
             const data = snapshot.val();
             document.getElementById('stat-visitors').innerText = data ? Object.keys(data).length : 0;
+        });
+
+        // --- ORDER MANAGEMENT ---
+        window.updateOrderStatus = (key, newStatus) => {
+            set(ref(db, `veggie_orders/${key}/status`), newStatus);
+        };
+
+        // --- EXPORT REPORT ---
+        window.downloadOrderReport = () => {
+            onValue(ref(db, 'veggie_orders'), (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return alert('No orders to export!');
+
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += "Date,Time,Customer,Items,Total (Rs.),Status\n";
+
+                Object.values(data).reverse().forEach(order => {
+                    const dt = new Date(order.timestamp);
+                    const date = dt.toLocaleDateString();
+                    const time = dt.toLocaleTimeString();
+                    const customer = order.customer || 'Guest';
+                    const items = (order.items || []).join('; ');
+                    const total = order.total || 0;
+                    const status = order.status || 'New';
+
+                    csvContent += `"${date}","${time}","${customer}","${items}","${total}","${status}"\n`;
+                });
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `veggie_orders_report_${new Date().toISOString().slice(0, 10)}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }, { onlyOnce: true });
+        };
+
+        // --- SETTINGS MANAGEMENT ---
+        window.updateSettings = async () => {
+            const wa = document.getElementById('s-wa').value;
+            const addr = document.getElementById('s-addr').value;
+            const delivery = document.getElementById('s-delivery').value;
+
+            await set(ref(db, 'veggie_settings'), {
+                whatsapp: wa,
+                address: addr,
+                delivery_charge: delivery
+            });
+            alert('Settings updated successfully!');
+        };
+
+        onValue(ref(db, 'veggie_settings'), (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                document.getElementById('s-wa').value = data.whatsapp || '';
+                document.getElementById('s-addr').value = data.address || '';
+                document.getElementById('s-delivery').value = data.delivery_charge || '';
+            }
         });
 
         if (localStorage.getItem('vb_admin_logged') === 'true') initDashboard();

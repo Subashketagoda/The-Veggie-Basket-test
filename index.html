@@ -162,7 +162,7 @@
 
     <!-- WhatsApp Floating Button -->
     <a href="https://wa.me/94771234567?text=Hi%20The%20Veggie%20Basket!%20I'd%20like%20to%20inquire%20about..."
-        class="wa-float" target="_blank">
+        class="wa-float" target="_blank" id="wa-float">
         <i class="fab fa-whatsapp"></i>
     </a>
 
@@ -188,10 +188,11 @@
             <div class="footer-section">
                 <h4>Contact Info</h4>
                 <ul style="color: #888;">
-                    <li><i class="fas fa-phone" style="margin-right: 10px;"></i> +94 77 123 4567</li>
+                    <li><i class="fas fa-phone" style="margin-right: 10px;"></i> <span id="f-phone">+94 77 123
+                            4567</span></li>
                     <li><i class="fas fa-envelope" style="margin-right: 10px;"></i> hello@veggiebasket.lk</li>
-                    <li><i class="fas fa-map-marker-alt" style="margin-right: 10px;"></i> 123 Farm Road, Colombo, Sri
-                        Lanka</li>
+                    <li><i class="fas fa-map-marker-alt" style="margin-right: 10px;"></i> <span id="f-addr">123 Farm
+                            Road, Colombo, Sri Lanka</span></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -209,6 +210,33 @@
     </footer>
 
     <script src="index.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDp7G3C1mMeK1Htfsxharb05wtf0VTw88",
+            authDomain: "studio-7cdf1.firebaseapp.com",
+            databaseURL: "https://studio-7cdf1-default-rtdb.firebaseio.com",
+            projectId: "studio-7cdf1",
+            storageBucket: "studio-7cdf1.firebasestorage.app",
+            messagingSenderId: "460661592780",
+            appId: "1:460661592780:web:dc8fd00cad5541141e6869"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        onValue(ref(db, 'veggie_settings'), (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                if (data.whatsapp) {
+                    document.getElementById('f-phone').innerText = data.whatsapp;
+                    document.getElementById('wa-float').href = `https://wa.me/${data.whatsapp.replace(/\+/g, '').replace(/\s/g, '')}?text=Hi%20The%20Veggie%20Basket!`;
+                }
+                if (data.address) document.getElementById('f-addr').innerText = data.address;
+            }
+        });
+    </script>
 </body>
 
 </html>
